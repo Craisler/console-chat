@@ -42,7 +42,7 @@ public class ClientHandler {
                             break;
                         }
                     }
-                    server.broadcastMessage("Server:" + message);
+                    server.broadcastMessage("Server: " + message);
 
                 }
             } catch (IOException e) {
