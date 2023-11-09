@@ -24,18 +24,24 @@ public class ClientHandler {
         this.server = server;
         in = new DataInputStream(socket.getInputStream());
         out = new DataOutputStream(socket.getOutputStream());
-        this.out = out;
         username = "User" + userCount++;
         server.subscribe(this);
         new Thread(() -> {
             try {
                 while (true) {
                     String message = in.readUTF();
-                    if(message.startsWith("/")) {
-                    if (message.equals("/exit")) {
-                        break;
+                    if (message.startsWith("/")) {
+                        if (message.equals("/w")) {
+                            System.out.println("w");
+                            String user = message.replaceAll("^/w\\s+(\\w+)\\s+.+","$1");
+                            message =  message.replaceAll("^/w\\s+(\\w+)\\s+(.+)","$2");
+                            System.out.println("user = "+user+ " message = "+message);
+                            server.sendMessageToUser(user, message);
+                        }
+                        if (message.equals("/exit")) {
+                            break;
+                        }
                     }
-                }
                     server.broadcastMessage(message);
 
                 }
