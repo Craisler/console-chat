@@ -33,7 +33,7 @@ public class Network implements AutoCloseable {
             } finally {
                 close();
             }
-        });
+        }).start();
     }
 
     @Override
