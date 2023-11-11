@@ -43,8 +43,6 @@ public class ClientHandler {
         boolean isAuthenthifacate = false;
         while (!isAuthenthifacate) {
             String message = in.readUTF();
-//            /auth login JPasswordField
-//            /sign login nick password
             String[] args = message.split(" ");
             String command = args[0];
             switch (command) {
@@ -65,8 +63,14 @@ public class ClientHandler {
                 case "/register": {
                     String login = args[1];
                     String nick = args[2];
-                    String password = args[3];
-                    boolean isRegistred = server.getAuthenticationProvider().register(login, password, nick);
+                    String role = args[3];
+                    if (!(role.equals("ADMIN") || role.equals("USER"))) {
+                        System.out.println("Роль ADMIN или USER");
+                        sendMessage("Должна быть роль ADMIN или USER");
+                        continue;
+                    }
+                    String password = args[4];
+                    boolean isRegistred = server.getAuthenticationProvider().register(login, password, username, nick);
                     if (isRegistred) {
                         sendMessage("Указан неверный логин/пароль");
                     } else {
@@ -78,7 +82,11 @@ public class ClientHandler {
                     break;
                 }
                 default: {
-                    sendMessage("Авторизуйтесь");
+                    sendMessage("Зарегистрируйтесь или авторизуйтесь для входа в чат. " +
+                            "Для авторизации введите: \n" +
+                            "/auth login password" +
+                            "Для регистрации: \n" +
+                            "/register login nick role password");
                 }
             }
         }
@@ -87,22 +95,61 @@ public class ClientHandler {
     private void communicateWithUser(Server server) throws IOException {
         while (true) {
             String message = in.readUTF();
+/**
+ *
+ */
+            String[] args = message.split(" ");
+            String command = args[0];
             if (message.startsWith("/")) {
-                if (message.equals("/w")) {
-                    System.out.println("w");
-                    String user = message.replaceAll("^/w\\s+(\\w+)\\s+.+", "$1");
-                    message = message.replaceAll("^/w\\s+(\\w+)\\s+(.+)", "$2");
-                    System.out.println("user = " + user + " message = " + message);
-                    server.sendMessageToUser(user, message);
-                }
-                if (message.equals("/exit")) {
-                    break;
-                } else if (message.equals("/list")) {
-                    List<String> userList = server.getUserList();
-                    String joinedUsers =
-                            String.join(", ", userList);
+                switch (command) {
+                    case "/w": {
+                        System.out.println("w");
+                        String user = message.replaceAll("^/w\\s+(\\w+)\\s+.+", "$1");
+                        message = message.replaceAll("^/w\\s+(\\w+)\\s+(.+)", "$2");
+                        System.out.println("user = " + user + " message = " + message);
+                        server.sendMessageToUser(user, message);
+                    }
+
+                    case "/kick": {
+                        String myRole = server.getAuthenticationProvider().getRoleByUsername(this.username);
+                        if (!myRole.equals("ADMIN")) {
+                            sendMessage("Недостаточно прав для удаления пользователя");
+                            continue;
+                        }
+                        String kickedUser;
+                        try {
+                            kickedUser = args[1];
+                        } catch (ArrayIndexOutOfBoundsException e) {
+                            sendMessage("Укажите пользователя для удаления");
+                            continue;
+                        }
+                        if (server.kickUser(kickedUser, this.username)) {
+                            sendMessage("Удалили пользователя:" + kickedUser);
+                        } else {
+                            sendMessage("Не найден пользователь" + kickedUser);
+                        }
+                        continue;
+                    }
+                    case "/role": {
+                        String whatRole = server.getAuthenticationProvider().getRoleByUsername(this.username);
+                        sendMessage("Моя роль:" + whatRole);
+                        continue;
+                    }
+                    case "/exit": {
+                        this.disconnect();
+                        break;
+                    }
+                    case "/list": {
+                        List<String> userList = server.getUserList();
+                        String joinedUsers =
+                                String.join(", ", userList);
 //                            userList.stream().collect(Collectors.joining(","));
-                    sendMessage(joinedUsers);
+                        sendMessage(joinedUsers);
+                        continue;
+                    }
+                    default: {
+                        sendMessage("Введите команду");
+                    }
                 }
             } else {
                 server.broadcastMessage("Server: " + message);
