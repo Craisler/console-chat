@@ -5,14 +5,21 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Server {
     private int port;
     private List<ClientHandler> clients;
+    private final AuthenticationProvider authenticationProvider;
 
-    public Server(int port) {
+    public Server(int port, AuthenticationProvider authenticationProvider) {
         this.port = port;
         clients = new ArrayList<>();
+        this.authenticationProvider = authenticationProvider;
+    }
+
+    public AuthenticationProvider getAuthenticationProvider() {
+        return authenticationProvider;
     }
 
     public void start() {
@@ -52,5 +59,16 @@ public class Server {
         clients.remove(clientHandler);
         broadcastMessage("Клиент: " + clientHandler.getUsername() + "вышел из чата");
 
+    }
+    public synchronized List<String> getUserList() {
+//        var listUsers = new ArrayList<String>();
+//        for (ClientHandler client : clients) {
+//            listUsers.add(client.getUsername());
+//        }
+//        return listUsers;
+        return clients.stream()
+                .map(ClientHandler::getUsername)
+//                .map(client -> client.getUsername())
+                .collect(Collectors.toList());
     }
 }
